@@ -11,7 +11,8 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((HOST, PORT))
 
 while True:
-	inpute = input("> ")
+	inpute = input("< ")
 	s.sendall(bytes(inpute + "\n", ENCODING))
 	data = str(s.recv(1024), ENCODING)
-	print(data)
+	print("> " + data)
+s.close()

@@ -1,4 +1,4 @@
-# ist.ia.caixote
+# ist.rc.caixote
 A Python implementation of a Dropbox-like user folder file synchronization.
 
 ### Project Infos

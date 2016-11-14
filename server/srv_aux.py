@@ -57,16 +57,14 @@ def client_thread_handler(sock):
 				break
 
 		elif method == "INF":
-			num_lines = header
+			num_lines = header[0]
 			urpath = os.path.join(ROOT_PATH, sock["uname"])
 			os.makedirs(urpath, exist_ok=True)
 
 			for _ in range(int(num_lines)):
 				line = readline_split_utf8(conn)
 				fmtime, fown, fpath = int(line[0]), int(line[1]), os.path.join(urpath, line[2])
-				print(fpath)
 				if not os.path.exists(fpath): # file doesn't exist
-					print("File at {} named {} doesn't exist!".format(*os.path.split(fpath)))
 					os.makedirs(os.path.dirname(fpath), exist_ok=True) # make dirs if doesn't exist
 					print("File " + fpath + " does not exist. Creating...")
 					with open(fpath, "a"):
@@ -78,11 +76,13 @@ def client_thread_handler(sock):
 					if int(stats.st_mtime) > fmtime:
 						print(fpath + " should be sent to client")
 					elif int(stats.st_mtime) < fmtime:
-						print(fpath + " outdated. pls send client!")
+						print(fpath + " outdated. pls send new client!")
 					else:
 						print(fpath + " is up to date!")
 				else:
 					print("Directory or weird file? Do nothing!")
+
+			conn.send(b"TOSYNC (lines)\n")
 
 		elif method == "GET":
 			print("not yet implemented.")

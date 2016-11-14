@@ -1,7 +1,5 @@
 import socket
-import stat
 import sys
-import os
 from aux import *
 
 if len(sys.argv) < 5:

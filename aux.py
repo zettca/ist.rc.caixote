@@ -1,3 +1,5 @@
+import os
+
 ENC = "utf8"
 
 def readline_split_utf8(conn):

@@ -14,33 +14,6 @@ USER = sys.argv[3]
 DIR = sys.argv[4]
 ENC = "utf8"
 
-def put_files(path, lst):
-	for f in os.listdir(path): 	# List files
-		fp = os.path.join(path, f)
-		stats = os.lstat(fp)
-
-		if stat.S_ISREG(stats.st_mode):
-			lst.append([int(stats.st_mtime), stats.st_uid , fp])
-		elif stat.S_ISDIR(stats.st_mode):
-			#lst.append(["d", int(stats.st_mtime), fp[fp.find("/")+1:]])
-			put_files(fp, lst)
-		else:
-			print(f + " has a weird filetype. skipping...")
-
-# ========== MAIN ========== #
-
-'''
-for path, dirs, files in os.walk(DIR):
-	print((path, files))
-
-filelist = []
-put_files(DIR, filelist)
-filelist = sorted(filelist, key=lambda el : el[0], reverse=True)
-
-for el in filelist:
-	print(el)
-'''
-
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
 	s.connect((HOST, PORT))
@@ -65,7 +38,7 @@ while True:
 	if code=="LOGGED": # Login Successful. Send INF (FilesInfo)
 		print("I logged, nice!")
 		header, files = [], []
-		put_files(DIR, files)
+		files = get_files(DIR)
 		files = sorted(files, key=lambda el : el[2].count("/"))
 
 		header = make_line_bytes(["INF", len(files)])

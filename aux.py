@@ -18,3 +18,12 @@ def make_line(lst):
 
 def make_line_bytes(lst):
 	return bytes(make_line(lst), ENC)
+
+def get_files(path):
+	lst = []
+	for path, dirs, files in os.walk(path):
+		for fi in files:
+			fpath = os.path.join(path, fi)
+			stats = os.lstat(fpath)
+			lst.append([int(stats.st_mtime), stats.st_uid , fpath])
+	return lst

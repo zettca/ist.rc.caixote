@@ -2,6 +2,7 @@ import time
 import os
 
 ROOT_PATH = "files"
+logged_sockets = []
 
 def readline_split_utf8(conn):
 	byteses = conn.recv(1)
@@ -13,7 +14,6 @@ def readline_split_utf8(conn):
 		else:
 			break
 	return str(byteses, "utf8").split(" ")
-logged_sockets = []
 
 def log(msg):
 	print("[{}] {}".format(time.strftime("%H:%M:%S", time.localtime()), msg))
@@ -25,9 +25,9 @@ def contains(lst, filter):
 	return False
 
 def client_thread_handler(sock):
-	conn = sock["conn"]
+	conn, addr = sock["conn"], sock["addr"]
 
-	uaddr = "{}:{}".format(*sock["addr"])
+	uaddr = "{}:{}".format(*addr)
 	log("{} bound to thread...".format(uaddr))
 
 	while True:
@@ -36,7 +36,7 @@ def client_thread_handler(sock):
 		if not headers: # client exited early
 			log("{} closed socket? :(".format(uaddr))
 			global logged_sockets # V "logout" if logged in
-			logged_sockets = [s for s in logged_sockets if s["addr"] != sock["addr"]]
+			logged_sockets = [s for s in logged_sockets if s["addr"] != addr]
 			break
 
 		# Get/Split header line
@@ -55,26 +55,24 @@ def client_thread_handler(sock):
 				log("{} tried to double sync {}:{}. Already being synced...".format(uaddr, uname, upath))
 				conn.sendall(b"ERRORE Alreadysyncingpath...\n")
 				break
-		elif method == "INF":
-			lmtime, num_lines = header
-			fullurpath = os.path.join(ROOT_PATH, sock["uname"]+"-"+sock["upath"])
 
-			os.makedirs(fullurpath, exist_ok=True)
+		elif method == "INF":
+			num_lines = header
+			urpath = os.path.join(ROOT_PATH, sock["uname"])
+			os.makedirs(urpath, exist_ok=True)
 
 			for _ in range(int(num_lines)):
 				line = readline_split_utf8(conn)
-				fdir = line[0] == "d"
-				fmtime, fpath = int(line[1]), os.path.join(fullurpath, line[2])
+				fmtime, fown, fpath = int(line[0]), int(line[1]), os.path.join(urpath, line[2])
 				print(fpath)
-				if not os.path.exists(fpath):
-					if fdir:
-						print("Directory " + fpath + " does not exist. Creating...")
-						os.makedirs(fpath)
-					else:
-						print("File " + fpath + " does not exist. Creating...")
-						with open(fpath, "a"):
-							os.utime(fpath, (0, 0))
-						print("Client must send " + fpath)
+				if not os.path.exists(fpath): # file doesn't exist
+					print("File at {} named {} doesn't exist!".format(*os.path.split(fpath)))
+					os.makedirs(os.path.dirname(fpath), exist_ok=True) # make dirs if doesn't exist
+					print("File " + fpath + " does not exist. Creating...")
+					with open(fpath, "a"):
+						os.utime(fpath, (0, 0))
+						os.chown(fpath, fown, fown)
+					print("Client must send " + fpath)
 				elif os.path.isfile(fpath):
 					stats = os.lstat(fpath)
 					if int(stats.st_mtime) > fmtime:
@@ -86,18 +84,19 @@ def client_thread_handler(sock):
 				else:
 					print("Directory or weird file? Do nothing!")
 
-
-
 		elif method == "GET":
 			print("not yet implemented.")
 			conn.sendall("not yet implemented. sorry client.")
+
 		elif method == "PUT":
 			print("not yet implemented.")
 			conn.sendall("not yet implemented. sorry client.")
+
 		else:
 			print("Method not valid. Not treated yet tho")
+			print("... ?")
 
 		#conn.sendall(b"(End of HEADER check)")
 
-	log("Closing connection to {}:{}...".format(*sock["addr"]))
+	log("Closing connection to {}:{}...".format(*addr))
 	conn.close()

@@ -20,9 +20,9 @@ def put_files(path, lst):
 		stats = os.lstat(fp)
 
 		if stat.S_ISREG(stats.st_mode):
-			lst.append(["-", int(stats.st_mtime), fp[fp.find("/")+1:]])
+			lst.append([int(stats.st_mtime), stats.st_uid , fp])
 		elif stat.S_ISDIR(stats.st_mode):
-			lst.append(["d", int(stats.st_mtime), fp[fp.find("/")+1:]])
+			#lst.append(["d", int(stats.st_mtime), fp[fp.find("/")+1:]])
 			put_files(fp, lst)
 		else:
 			print(f + " has a weird filetype. skipping...")
@@ -68,8 +68,7 @@ while True:
 		put_files(DIR, files)
 		files = sorted(files, key=lambda el : el[2].count("/"))
 
-		lmtime = files[0][0]
-		header = make_line_bytes(["INF", lmtime, len(files)])
+		header = make_line_bytes(["INF", len(files)])
 		s.send(header)
 		
 		for file in files:

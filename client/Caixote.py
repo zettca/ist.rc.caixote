@@ -2,7 +2,6 @@ import socket
 import stat
 import sys
 import os
-from hashlib import md5
 from cli_aux import *
 
 if len(sys.argv) < 5:
@@ -21,9 +20,7 @@ def put_files(path, lst):
 		stats = os.lstat(filepath)
 
 		if stat.S_ISREG(stats.st_mode):
-			with open(filepath, 'rb') as fd:
-				checksum = md5(fd.read()).hexdigest() # hash for stuffs?
-			lst.append(("-", int(stats.st_mtime), filepath, checksum))
+			lst.append(("-", int(stats.st_mtime), filepath))
 		elif stat.S_ISDIR(stats.st_mode):
 			lst.append(("d", int(stats.st_mtime), filepath))
 			put_files(filepath, lst)

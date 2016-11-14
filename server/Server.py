@@ -2,7 +2,6 @@ import _thread
 import socket
 import sys
 import os
-from hashlib import md5
 from srv_aux import *
 
 HOST = "localhost"
@@ -57,10 +56,6 @@ def client_thread_handler(sock):
 							print(filepath + " outdated. pls send client!")
 						else:
 							print(filepath + " is up to date!")
-						with open(filepath, 'rb') as fd:
-							checksum = md5(fd.read()).hexdigest() # hash for stuffs?
-							if not checksum == lines[i][3]:
-								print("Weird. Diff files with same mtime :O")
 				else:
 					print(filepath + " does not exist. I should create it now, right?")
 					print(filepath + " does not exist. client must send mee contents")

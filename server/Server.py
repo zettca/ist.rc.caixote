@@ -1,10 +1,13 @@
 import _thread
 import socket
 import sys
+import os
+from hashlib import md5
 from srv_aux import *
 
 HOST = "localhost"
 PORT = int(sys.argv[1]) if len(sys.argv) > 1  else 50000
+ROOT_PATH = "files"
 
 logged_sockets = []
 
@@ -34,17 +37,34 @@ def client_thread_handler(sock):
 			if not contains(logged_sockets, filt):
 				logged_sockets.append(sock)
 				log("{} logged in as {} to sync {}...".format(uaddr, uname, upath))
-				conn.sendall(b"LOGGED PlssendINF...\n")
+				conn.sendall(b"LOGGED PlsSendINF...\n")
 			else:
 				log("{} tried to double sync {}:{}. Already being synced...".format(uaddr, uname, upath))
-				conn.sendall(b"ERRORE Alreadysyncing-{}...\n".format(upath))
+				conn.sendall(b"ERRORE Alreadysyncingpath...\n")
 				break
 		elif method == "INF":
 			lmtime, num_lines = header
 			lines = []
-			for i in range(num_lines):
-				lines[i] = readline_split_utf8(conn)
-				print(lines[i])
+			for i in range(int(num_lines)):
+				lines.append(readline_split_utf8(conn))
+				fpath, fmtime = lines[i][2], lines[i][1]
+				filepath = os.path.join(ROOT_PATH, sock["uname"], lines[i][2])
+				if os.path.exists(filepath):
+					with os.lstat(filepath) as stats:
+						if int(stats.st_mtime) > int(fmtime):
+							print(filepath + "should be sent to client")
+						elif int(stats.st_mtime) < int(fmtime):
+							print(filepath + " outdated. pls send client!")
+						else:
+							print(filepath + " is up to date!")
+						with open(filepath, 'rb') as fd:
+							checksum = md5(fd.read()).hexdigest() # hash for stuffs?
+							if not checksum == lines[i][3]:
+								print("Weird. Diff files with same mtime :O")
+				else:
+					print(filepath + " does not exist. I should create it now, right?")
+					print(filepath + " does not exist. client must send mee contents")
+
 
 		elif method == "GET":
 			print("not yet implemented.")
@@ -52,6 +72,8 @@ def client_thread_handler(sock):
 		elif method == "PUT":
 			print("not yet implemented.")
 			conn.sendall("not yet implemented. sorry.")
+		else:
+			print("Method not valid. Not treated yet tho")
 
 		#conn.sendall(b"(End of HEADER check)")
 

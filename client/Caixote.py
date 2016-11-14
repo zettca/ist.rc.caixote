@@ -23,21 +23,23 @@ def put_files(path, lst):
 		if stat.S_ISREG(stats.st_mode):
 			with open(filepath, 'rb') as fd:
 				checksum = md5(fd.read()).hexdigest() # hash for stuffs?
-			lst.append((int(stats.st_mtime), stats.st_uid, filepath, checksum))
+			lst.append(("-", int(stats.st_mtime), filepath, checksum))
 		elif stat.S_ISDIR(stats.st_mode):
-			#lst.append(("d", int(stats.st_mtime), stats.st_uid, filepath))
+			lst.append(("d", int(stats.st_mtime), filepath))
 			put_files(filepath, lst)
 		else:
 			print(f + " has a weird filetype. skipping...")
 
 # ========== MAIN ========== #
 
+'''
 filelist = []
 put_files(DIR, filelist)
-filelist = sorted(filelist, key=lambda el : el[3], reverse=True)
+filelist = sorted(filelist, key=lambda el : el[0], reverse=True)
 
 for el in filelist:
 	print(el)
+'''
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
@@ -50,18 +52,30 @@ except socket.error as err:
 # Login to server
 header = " ".join(["LOG", USER, DIR+"\n"])
 s.sendall(bytes(header, ENC))
-print("Attempted to login. Ready to recv from server...")
+print("SENT LOG request...")
 
 while True:
 	data = readline_split_utf8(s)
-	print(data)
-	code, desc = data
 	if not data:
 		print("Server closed connection. :(")
 		break
 
-	if code=="LOGGED":
+	print(data)
+	code, desc = data
+	if code=="LOGGED": # Login Successful. Send INF (FilesInfo)
 		print("I logged, nice!")
+		header, files = [], []
+		put_files(DIR, files)
+		files = sorted(files, key=lambda el : el[2].count("/"))
+
+		lmtime = files[0][0]
+		header = make_line_bytes(("INF", lmtime, len(files)))
+		s.send(header)
+		
+		for file in files:
+			s.send(make_line_bytes(file))
+		print("Sent INF request...")
+
 	elif code=="ERRORE":
 		print("Shit. Couldn't h4ck")
 	else:

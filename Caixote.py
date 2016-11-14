@@ -2,7 +2,7 @@ import socket
 import stat
 import sys
 import os
-from cli_aux import *
+from aux import *
 
 if len(sys.argv) < 5:
 	print("USAGE: Caixote HOST PORT USERNAME DIRECTORY")
@@ -20,9 +20,9 @@ def put_files(path, lst):
 		stats = os.lstat(filepath)
 
 		if stat.S_ISREG(stats.st_mode):
-			lst.append(("-", int(stats.st_mtime), filepath))
+			lst.append(["-", int(stats.st_mtime), filepath])
 		elif stat.S_ISDIR(stats.st_mode):
-			lst.append(("d", int(stats.st_mtime), filepath))
+			lst.append(["d", int(stats.st_mtime), filepath])
 			put_files(filepath, lst)
 		else:
 			print(f + " has a weird filetype. skipping...")
@@ -47,8 +47,7 @@ except socket.error as err:
 	print("Bound on next port({})".format(PORT+1)) 
 
 # Login to server
-header = " ".join(["LOG", USER, DIR+"\n"])
-s.sendall(bytes(header, ENC))
+s.sendall(make_line_bytes(["LOG", USER, DIR]))
 print("SENT LOG request...")
 
 while True:
@@ -66,7 +65,7 @@ while True:
 		files = sorted(files, key=lambda el : el[2].count("/"))
 
 		lmtime = files[0][0]
-		header = make_line_bytes(("INF", lmtime, len(files)))
+		header = make_line_bytes(["INF", lmtime, len(files)])
 		s.send(header)
 		
 		for file in files:

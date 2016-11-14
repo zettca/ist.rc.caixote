@@ -5,7 +5,7 @@ import os
 from aux import *
 
 if len(sys.argv) < 5:
-	print("USAGE: Caixote HOST PORT USERNAME DIRECTORY")
+	print("USAGE: Caixote.py HOST PORT USERNAME DIRECTORY")
 	sys.exit(-1)
 
 HOST = sys.argv[1]
@@ -16,20 +16,23 @@ ENC = "utf8"
 
 def put_files(path, lst):
 	for f in os.listdir(path): 	# List files
-		filepath = os.path.join(path, f)
-		stats = os.lstat(filepath)
+		fp = os.path.join(path, f)
+		stats = os.lstat(fp)
 
 		if stat.S_ISREG(stats.st_mode):
-			lst.append(["-", int(stats.st_mtime), filepath])
+			lst.append(["-", int(stats.st_mtime), fp[fp.find("/")+1:]])
 		elif stat.S_ISDIR(stats.st_mode):
-			lst.append(["d", int(stats.st_mtime), filepath])
-			put_files(filepath, lst)
+			lst.append(["d", int(stats.st_mtime), fp[fp.find("/")+1:]])
+			put_files(fp, lst)
 		else:
 			print(f + " has a weird filetype. skipping...")
 
 # ========== MAIN ========== #
 
 '''
+for path, dirs, files in os.walk(DIR):
+	print((path, files))
+
 filelist = []
 put_files(DIR, filelist)
 filelist = sorted(filelist, key=lambda el : el[0], reverse=True)
@@ -58,6 +61,7 @@ while True:
 
 	print(data)
 	code, desc = data
+
 	if code=="LOGGED": # Login Successful. Send INF (FilesInfo)
 		print("I logged, nice!")
 		header, files = [], []
@@ -69,6 +73,7 @@ while True:
 		s.send(header)
 		
 		for file in files:
+			print(file)
 			s.send(make_line_bytes(file))
 		print("Sent INF request...")
 

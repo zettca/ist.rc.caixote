@@ -3,53 +3,73 @@ import sys
 from aux import *
 
 if len(sys.argv) < 5:
-	print("USAGE: Caixote.py HOST PORT USERNAME DIRECTORY")
+	print("USAGE: python Caixote.py HOST PORT USERNAME DIRECTORY")
 	sys.exit(-1)
 
-HOST = sys.argv[1]
-PORT = int(sys.argv[2])
-USER = sys.argv[3]
-DIR = sys.argv[4]
-ENC = "utf8"
+HOST, PORT, USER, DIR = sys.argv[1:5]
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-try:
-	s.connect((HOST, PORT))
-except socket.error as err:
-	print(err)
-	s.connect((HOST, PORT+1))
-	print("Bound on next port({})".format(PORT+1)) 
+s.connect((HOST, int(PORT)))
 
-# Login to server
-s.sendall(make_line_bytes(["LOG", USER, DIR]))
-print("SENT LOG request...")
+s.sendall(make_line_bytes(["LOG", USER, DIR])) # Login request
 
 while True:
-	data = readline_split_utf8(s)
+	data = readline_split(s)
 	if not data:
 		print("Server closed connection. :(")
 		break
 
-	print(data)
-	code, desc = data
+	#print(data)
+	code, headers = data[0], data[1:]
 
-	if code=="LOGGED": # Login Successful. Send INF (FilesInfo)
-		print("I logged, nice!")
-		header, files = [], []
-		files = get_files(DIR)
-		files = sorted(files, key=lambda el : el[2].count("/"))
-
-		header = make_line_bytes(["INF", len(files)])
-		s.send(header)
-		
+	if code == "LOGGED": # Login Successful.
+		files = sorted(get_files(DIR), key=lambda el : el[1].count("/"))
+		s.sendall(make_line_bytes(["INF", len(files)]))
 		for file in files:
-			print(file)
-			s.send(make_line_bytes(file))
-		print("Sent INF request...")
+			s.sendall(make_line_bytes(file))
+	
+	elif code == "TOSYNC":
+		files = int(headers[0])
+		if files == 0: # nothing to sync
+			print("ALL FILES ARE SYNCED! WEE! EXITING")
+			break
 
-	elif code=="ERRORE":
+		for _ in range(files):
+			fcode, fpath = readline_split(s)
+			if fcode == "SRVOLD":
+				stats = os.lstat(fpath)
+				fown, fmtime = stats.st_uid, stats.st_mtime
+				with open(fpath, "rb") as fd:
+					fbytes = fd.read()
+					fd.close()
+				s.sendall(make_line_bytes(["PUT", fpath, len(fbytes), fown, int(fmtime)]))
+				sentbytes = s.send(fbytes)
+				if sentbytes < len(fbytes):
+					print("Error uploading " + fpath)
+				else:
+					print("Successfully uploaded " + fpath)
+			elif fcode == "CLIOLD":
+				s.sendall(make_line_bytes(["GET", fpath]))
+				print("Requesting " + fpath)
+			else:
+				print("but what is {}?".format(fcode))
+
+	elif code == "TOSAVE":
+		fpath, flength, fown, fmtime = headers
+		fbytes = s.recv(int(flength))
+		os.makedirs(os.path.split(fpath)[0], exist_ok=True)
+		with open(fpath, "wb") as fd:
+			fd.write(fbytes)
+			fd.close()
+		os.utime(fpath, (int(fmtime), int(fmtime)))
+		os.chown(fpath, int(fown), int(fown))
+		print("Successfully downloaded " + fpath)
+
+	elif code == "ERRORE":
 		print("Shit. Couldn't h4ck")
+
 	else:
 		print("WTF does {} mean?".format(code))
 
+print("Closing connection to server...")
 s.close()

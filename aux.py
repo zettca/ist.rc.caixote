@@ -2,7 +2,7 @@ import os
 
 ENC = "utf8"
 
-def readline_split_utf8(conn):
+def readline_split(conn):
 	byteses = conn.recv(1)
 	if not byteses:	return None
 	while True:
@@ -13,13 +13,10 @@ def readline_split_utf8(conn):
 			break
 	return str(byteses, ENC).split(" ")
 
-def make_line(lst):
+def make_line_bytes(lst):
 	lst = [str(el) for el in lst]
 	lst[-1] += "\n"
-	return " ".join(lst)
-
-def make_line_bytes(lst):
-	return bytes(make_line(lst), ENC)
+	return bytes(" ".join(lst), ENC)
 
 def get_files(path):
 	lst = []
@@ -27,5 +24,5 @@ def get_files(path):
 		for fi in files:
 			fpath = os.path.join(path, fi)
 			stats = os.lstat(fpath)
-			lst.append([int(stats.st_mtime), stats.st_uid , fpath])
+			lst.append([int(stats.st_mtime), fpath])
 	return lst

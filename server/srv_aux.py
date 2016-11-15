@@ -8,6 +8,12 @@ logged_sockets = []
 def log(msg):
 	print("[{}] {}".format(time.strftime("%H:%M:%S", time.localtime()), msg))
 
+def contains(lst, filter):
+	for el in lst:
+		if filter(el):
+			return True
+	return False
+
 def readline_split(conn):
 	byteses = conn.recv(1)
 	if not byteses:	return None
@@ -21,12 +27,6 @@ def make_line_bytes(lst):
 	lst = [str(el) for el in lst]
 	lst[-1] += "\n"
 	return bytes(" ".join(lst), ENC)
-
-def contains(lst, filter):
-	for el in lst:
-		if filter(el):
-			return True
-	return False
 
 def get_files_clirelative(path):
 	lst = []
@@ -71,15 +71,15 @@ def client_handler(sock):
 	log("{}:{} bound to thread".format(*addr))
 
 	while True:
-		head = readline_split(conn) # Get Header line, split by spaces
-		if not head:
+		data = readline_split(conn) # Get Header line, split by spaces
+		if not data:
 			log("{}:{} closed socket? :(".format(*addr))
 			global logged_sockets # V "logout" if logged in
 			logged_sockets = [s for s in logged_sockets if s["addr"] != addr]
 			break
 
-		#print(head)
-		method, headers = head[0], head[1:] # Split header line
+		#print(data)
+		method, headers = data[0], data[1:] # Split header line
 
 		if method == "LOG": # CLIENT REQUESTED "LOGIN" 
 			uname, upath = headers

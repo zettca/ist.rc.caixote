@@ -15,11 +15,10 @@ def contains(lst, filter):
 	return False
 
 def readline_split(conn):
-	byteses = conn.recv(1)
-	if not byteses:	return None
+	byteses = b""
 	while True:
 		byte = conn.recv(1)
-		if byte == b"\n": break
+		if not byte or byte == b"\n": break
 		byteses += byte
 	return str(byteses, ENC).split(" ")
 
@@ -89,14 +88,14 @@ def client_handler(sock):
 				logged_sockets.append(sock)
 				conn.sendall(b"LOGGED arg2\n")
 			else:
-				conn.sendall(b"ERRORE arg2\n")
+				conn.sendall(b"GOAWAY arg2\n")
 				break
 
 		elif method == "INF": # CLIENT REQUESTED FILES INFOS
 			response = handle_info_request(sock, headers)
 			conn.sendall(make_line_bytes(["TOSYNC", len(response)]))
 			for line in response:
-				print(line)
+				log("Requesting file " + line[1])
 				conn.sendall(make_line_bytes(line))
 
 		elif method == "GET": # CLIENT REQUESTED FILE CONTENTS
@@ -113,9 +112,12 @@ def client_handler(sock):
 
 		elif method == "PUT": # CLIENT SENT FILES CONTENTS 
 			fpath, flength, fown, fmtime = headers
-			print("file has {} bytes".format(flength))
 			fbytes = conn.recv(int(flength))
-			print("recv {} bytes".format(len(fbytes)))
+			#print("Downloaded {}{} bytes".format(len(fbytes), flength))
+			while len(fbytes) < int(flength): # sometimes recv doesn't receive all bytes
+				add_bytes = conn.recv(int(flength) - len(fbytes))
+				fbytes += add_bytes # additional bytes
+				#print("Downloaded {} extra bytes ({}/{})".format(len(add_bytes), len(fbytes), flength))
 			sf_path = os.path.join(ROOT_PATH, sock["uname"], fpath)
 			os.makedirs(os.path.split(sf_path)[0], exist_ok=True)
 			with open(sf_path, "wb") as fd:
@@ -123,7 +125,14 @@ def client_handler(sock):
 				fd.close()
 			os.utime(sf_path, (int(fmtime), int(fmtime)))
 			os.chown(sf_path, int(fown), int(fown))
-			log("Successfully downloaded " + fpath)
+			log("Downloaded " + fpath)
+
+		elif method:
+			log("Unknown method: {}".format(method))
+
+		else:
+			log("Files are synced? Kill client conn?")
+			break
 
 	log("Closing connection to {}:{}...".format(*addr))
 	conn.close()

@@ -65,11 +65,14 @@ while True:
 		os.chown(fpath, int(fown), int(fown))
 		print("Successfully downloaded " + fpath)
 
-	elif code == "ERRORE":
-		print("Shit. Couldn't h4ck")
+	elif code == "GOAWAY":
+		print("Server refused connection...")
+
+	elif code:
+		print("Unknown code: {}".format(code))
 
 	else:
-		print("WTF does {} mean?".format(code))
+		print("All synced? Kill myself?")
 
 print("Closing connection to server...")
 s.close()

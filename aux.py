@@ -3,14 +3,11 @@ import os
 ENC = "utf8"
 
 def readline_split(conn):
-	byteses = conn.recv(1)
-	if not byteses:	return None
+	byteses = b""
 	while True:
 		byte = conn.recv(1)
-		if byte != b"\n":
-			byteses += byte
-		else:
-			break
+		if not byte or byte == b"\n": break
+		byteses += byte
 	return str(byteses, ENC).split(" ")
 
 def make_line_bytes(lst):

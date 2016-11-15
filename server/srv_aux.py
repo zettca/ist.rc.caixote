@@ -113,8 +113,9 @@ def client_handler(sock):
 
 		elif method == "PUT": # CLIENT SENT FILES CONTENTS 
 			fpath, flength, fown, fmtime = headers
-			print("file has" + int(flength))
+			print("file has {} bytes".format(flength))
 			fbytes = conn.recv(int(flength))
+			print("recv {} bytes".format(len(fbytes)))
 			sf_path = os.path.join(ROOT_PATH, sock["uname"], fpath)
 			os.makedirs(os.path.split(sf_path)[0], exist_ok=True)
 			with open(sf_path, "wb") as fd:

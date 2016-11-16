@@ -8,6 +8,11 @@ logged_sockets = []
 def log(msg):
 	print("[{}] {}".format(time.strftime("%H:%M:%S", time.localtime()), msg))
 
+def remove_from_socketlist(sock):
+	for s in logged_sockets:
+		if sock["addr"] == addr
+	logged_sockets = [s for s in logged_sockets if s["addr"] != addr]
+
 def contains(lst, filter):
 	for el in lst:
 		if filter(el):
@@ -71,10 +76,10 @@ def client_handler(sock):
 
 	while True:
 		data = readline_split(conn) # Get Header line, split by spaces
+		global logged_sockets # V "logout" if logged in
 		if not data:
-			log("{}:{} closed socket? :(".format(*addr))
-			global logged_sockets # V "logout" if logged in
-			logged_sockets = [s for s in logged_sockets if s["addr"] != addr]
+			log("{}:{} sent None. Exiting".format(*addr))
+			remove_from_socketlist(sock, addr)
 			break
 
 		#print(data)
@@ -132,6 +137,8 @@ def client_handler(sock):
 
 		else:
 			log("Files are synced? Kill client conn?")
+			remove_from_socketlist(sock, addr) ## gndsgsdg
+			logged_sockets = [s for s in logged_sockets if s["addr"] != addr]
 			break
 
 	log("Closing connection to {}:{}...".format(*addr))

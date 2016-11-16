@@ -10,6 +10,7 @@ HOST, PORT, USER, DIR = sys.argv[1:5]
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((HOST, int(PORT)))
+print("Connected to server at {}:{} ".format(HOST, PORT))
 
 s.sendall(make_line_bytes(["LOG", USER, DIR])) # Login request
 
@@ -71,13 +72,14 @@ while True:
 		print("Successfully downloaded " + fpath)
 
 	elif code == "GOAWAY":
-		print("Server refused connection...")
+		print("Server refused connection... Already Logged somewhere else")
 
 	elif code:
 		print("Unknown code: {}".format(code))
 
 	else:
-		print("All synced? Kill myself?")
+		print("All synced? Killing myself.")
+		break
 
 print("Closing connection to server...")
 s.close()

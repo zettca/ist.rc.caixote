@@ -7,7 +7,7 @@ if len(sys.argv) < 2:
 	print("USAGE: python Server.py PORT")
 	sys.exit(-1)
 
-HOST, PORT = "localhost", int(sys.argv[1])
+HOST, PORT = "", int(sys.argv[1])
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((HOST, PORT))

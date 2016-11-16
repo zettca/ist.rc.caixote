@@ -1,6 +1,10 @@
 import os
+import time
 
 ENC = "utf8"
+
+def log(msg):
+	print("[{}] {}".format(time.strftime("%H:%M:%S", time.localtime()), msg))
 
 def readline_split(conn):
 	byteses = b""
@@ -30,3 +34,14 @@ def send_file(conn, fpath):
 		fbytes = fd.read()
 	conn.sendall(make_line_bytes(["PUT", fpath, len(fbytes), int(stats.st_mtime)]))
 	conn.sendall(fbytes)
+
+def handle_file(s, fcode, fpath):
+	if fcode == "SRVOLD":
+		log("Uploading " + fpath)
+		send_file(s, fpath)
+		log("Uploaded " + fpath)
+	elif fcode == "CLIOLD":
+		s.sendall(make_line_bytes(["GET", fpath]))
+		log("Requested " + fpath)
+	else:
+		log("but what is {}?".format(fcode))

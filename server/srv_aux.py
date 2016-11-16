@@ -107,7 +107,7 @@ def client_handler(sock):
 			remove_from_socketlist(sock)
 			break
 
-		#print(data)
+		#log(data)
 		method, headers = data[0], data[1:] # Split header line
 
 		if method == "LOG": # CLIENT REQUESTED "LOGIN" 
@@ -130,14 +130,14 @@ def client_handler(sock):
 		elif method == "GET": # CLIENT REQUESTED FILE CONTENTS
 			fpath = headers[0]
 			log("Uploading {}".format(fpath))
-			time.sleep(0.4)
+			time.sleep(0.6)
 			send_file(sock, fpath)
 			log("Uploaded " + fpath)
 
 		elif method == "PUT": # CLIENT SENT FILES CONTENTS
 			fpath, flength, fmtime = headers
 			log("Downloading {}".format(fpath))
-			time.sleep(0.4)
+			time.sleep(0.6)
 			save_file(sock, fpath, int(flength), fmtime)
 			log("Downloaded " + fpath)
 

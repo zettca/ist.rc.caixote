@@ -10,14 +10,14 @@ HOST, PORT, USER, DIR = sys.argv[1:5]
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((HOST, int(PORT)))
-print("Connected to server at {}:{} ".format(HOST, PORT))
+log("Connected to server at {}:{} ".format(HOST, PORT))
 
 s.sendall(make_line_bytes(["LOG", USER, DIR])) # Login request
 
 while True:
 	data = readline_split(s)
 	if not data:
-		print("Server closed connection. :(")
+		log("Server closed connection. :(")
 		break
 
 	#print(data)
@@ -32,23 +32,15 @@ while True:
 	elif code == "TOSYNC":
 		files = int(headers[0])
 		if files == 0: # nothing to sync
-			print("Directory is already synchronized. Exiting...")
+			log("Directory is already synchronized. Exiting...")
 			break
 
 		for _ in range(files):
 			fcode, fpath = readline_split(s)
-			if fcode == "SRVOLD":
-				print("Uploading " + fpath)
-				send_file(s, fpath)
-				print("Uploaded " + fpath)
-			elif fcode == "CLIOLD":
-				s.sendall(make_line_bytes(["GET", fpath]))
-				print("Requested " + fpath)
-			else:
-				print("but what is {}?".format(fcode))
+			handle_file(s, fcode, fpath)
 
 		# Client done with requests. Can exit
-		#print("Sent/Received all files successfully Exiting...")
+		#log("Sent/Received all files successfully Exiting...")
 		#break
 
 	elif code == "TOSAVE":
@@ -58,24 +50,24 @@ while True:
 		while len(fbytes) < flength: # sometimes recv doesn't receive all bytes
 			add_bytes = s.recv(flength - len(fbytes))
 			fbytes += add_bytes # additional bytes
-			print("Downloading {} [{}/{} {}%]".format(fpath, len(fbytes), flength, int(100*len(fbytes)/flength)))
+			log("Downloading {} [{}/{} {}%]".format(fpath, len(fbytes), flength, int(100*len(fbytes)/flength)))
 
 		os.makedirs(os.path.split(fpath)[0], exist_ok=True)
 		with open(fpath, "wb") as fd:
 			fd.write(fbytes)
 			fd.close()
 		os.utime(fpath, (int(fmtime), int(fmtime)))
-		print("Downloaded " + fpath)
+		log("Downloaded " + fpath)
 
 	elif code == "GOAWAY":
-		print("Server refused connection... Already Logged somewhere else")
+		log("Server refused connection... Already Logged somewhere else")
 
 	elif code:
-		print("Unknown code: {}".format(code))
+		log("Unknown code: {}".format(code))
 
 	else:
-		print("All synced? Killing myself.")
+		log("All synced? Killing myself.")
 		break
 
-print("Closing connection to server...")
+log("Closing connection to server...")
 s.close()

@@ -114,7 +114,7 @@ def client_handler(sock):
 			uname, upath = headers
 			sock["uname"], sock["upath"] = uname, upath
 			if login_user(sock, uname, upath):
-				log("Client {}:{} identified as {}".format(*addr, uname))
+				log("Client {}:{} identified as {}".format(addr[0], addr[1], uname))
 				conn.sendall(b"LOGGED arg2\n")
 			else:
 				conn.sendall(b"GOAWAY arg2\n")

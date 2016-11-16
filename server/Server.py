@@ -11,7 +11,7 @@ HOST, PORT = "localhost", int(sys.argv[1])
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((HOST, PORT))
-s.listen()
+s.listen(64)
 
 log("Server listening on port {}...".format(PORT))
 

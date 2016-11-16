@@ -54,6 +54,11 @@ while True:
 			else:
 				print("but what is {}?".format(fcode))
 
+		# Client done with requests. Can exit
+		s.sendall(b"")
+		print("Requested/Sent all files successfully. Exiting")
+		break
+
 	elif code == "TOSAVE":
 		fpath, flength, fown, fmtime = headers
 		fbytes = s.recv(int(flength))

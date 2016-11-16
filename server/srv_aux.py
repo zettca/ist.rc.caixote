@@ -104,7 +104,6 @@ def client_handler(sock):
 		global logged_sockets # V "logout" if logged in
 		if not data:
 			log("{}:{} sent None. Exiting".format(*addr))
-			remove_from_socketlist(sock)
 			break
 
 		#log(data)
@@ -128,26 +127,36 @@ def client_handler(sock):
 				conn.sendall(make_line_bytes(line))
 
 		elif method == "GET": # CLIENT REQUESTED FILE CONTENTS
-			fpath = headers[0]
-			log("Uploading {}".format(fpath))
+			cf_path = headers[0]
+			log("Uploading {}".format(cf_path))
 			time.sleep(0.6)
-			send_file(sock, fpath)
-			log("Uploaded " + fpath)
+			send_file(sock, cf_path)
+			log("Uploaded " + cf_path)
+
+		elif method == "GEN": # CLIENT REQUESTED N FILES' CONTENTS
+			num_lines = headers[0]
+			print("in gen" + num_lines)
+			for _ in range(int(num_lines)):
+				cf_path = readline_split(conn)[0]
+				log("Uploading {}".format(cf_path))
+				time.sleep(0.6)
+				send_file(sock, cf_path)
+				log("Uploaded " + cf_path)
 
 		elif method == "PUT": # CLIENT SENT FILES CONTENTS
-			fpath, flength, fmtime = headers
-			log("Downloading {}".format(fpath))
+			cf_path, flength, fmtime = headers
+			log("Downloading {}".format(cf_path))
 			time.sleep(0.6)
-			save_file(sock, fpath, int(flength), fmtime)
-			log("Downloaded " + fpath)
+			save_file(sock, cf_path, int(flength), fmtime)
+			log("Downloaded " + cf_path)
 
 		elif method:
 			log("Unknown method: {}. Ignoring".format(method))
 
 		else:
-			log("Files are synced? Killing {}'s' connection...".format(sock["uname"]))
-			remove_from_socketlist(sock)
+			log("Files are synced? Killing {}'s connection...".format(sock["uname"]))
 			break
 
+	remove_from_socketlist(sock)
 	log("Closing connection to {}:{}".format(*addr))
 	conn.close()

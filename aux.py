@@ -35,13 +35,8 @@ def send_file(conn, fpath):
 	conn.sendall(make_line_bytes(["PUT", fpath, len(fbytes), int(stats.st_mtime)]))
 	conn.sendall(fbytes)
 
-def handle_file(s, fcode, fpath):
-	if fcode == "SRVOLD":
-		log("Uploading " + fpath)
-		send_file(s, fpath)
-		log("Uploaded " + fpath)
-	elif fcode == "CLIOLD":
-		s.sendall(make_line_bytes(["GET", fpath]))
-		log("Requested " + fpath)
-	else:
-		log("but what is {}?".format(fcode))
+def request_file_infos(conn, dir):
+	files = get_files(dir)
+	conn.sendall(make_line_bytes(["INF", len(files)]))
+	for file in files:
+		conn.sendall(make_line_bytes(file))

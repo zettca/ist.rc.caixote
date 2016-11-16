@@ -7,6 +7,7 @@ if len(sys.argv) < 5:
 	sys.exit(-1)
 
 HOST, PORT, USER, DIR = sys.argv[1:5]
+all_files_downloaded, all_files_uploaded = False, False
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((HOST, int(PORT)))
@@ -15,7 +16,11 @@ log("Connected to server at {}:{} ".format(HOST, PORT))
 s.sendall(make_line_bytes(["LOG", USER, DIR])) # Login request
 
 while True:
-	data = readline_split(s)
+	if all_files_uploaded and all_files_downloaded:
+		log("Directory successfully synchronized. Exiting...")
+		break
+
+	data = readline_split(s) # waits for a line to be sent
 	if not data:
 		log("Server closed connection. :(")
 		break
@@ -24,24 +29,36 @@ while True:
 	code, headers = data[0], data[1:]
 
 	if code == "LOGGED": # Login Successful.
-		files = sorted(get_files(DIR), key=lambda el : el[1].count("/"))
-		s.sendall(make_line_bytes(["INF", len(files)]))
-		for file in files:
-			s.sendall(make_line_bytes(file))
+		request_file_infos(s, DIR)
 	
 	elif code == "TOSYNC":
-		files = int(headers[0])
-		if files == 0: # nothing to sync
+		num_files = int(headers[0])
+		if num_files == 0: # nothing to sync
 			log("Directory is already synchronized. Exiting...")
 			break
 
-		for _ in range(files):
+		my_olds = []
+		for _ in range(num_files): # upload/request all files needed
 			fcode, fpath = readline_split(s)
-			handle_file(s, fcode, fpath)
+			if fcode == "SRVOLD":
+				log("Uploading " + fpath)
+				send_file(s, fpath)
+				log("Uploaded " + fpath)
+			elif fcode == "CLIOLD":
+				log("Requesting " + fpath)
+				my_olds.append(fpath)
+			else:
+				log("but what is {}?".format(fcode))
 
-		# Client done with requests. Can exit
-		#log("Sent/Received all files successfully Exiting...")
-		#break
+		all_files_uploaded = True
+		if my_olds:
+			s.sendall(make_line_bytes(["GEN", len(my_olds)]))
+			body = b""
+			for line in my_olds:
+				body += make_line_bytes([line])
+			s.sendall(body)
+		else:
+			all_files_downloaded = True
 
 	elif code == "TOSAVE":
 		fpath, flength, fmtime = headers

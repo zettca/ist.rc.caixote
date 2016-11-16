@@ -32,44 +32,40 @@ while True:
 	elif code == "TOSYNC":
 		files = int(headers[0])
 		if files == 0: # nothing to sync
-			print("ALL FILES ARE SYNCED! WEE! EXITING")
+			print("Directory is already synchronized. Exiting...")
 			break
 
 		for _ in range(files):
 			fcode, fpath = readline_split(s)
 			if fcode == "SRVOLD":
-				stats = os.lstat(fpath)
-				fown, fmtime = stats.st_uid, stats.st_mtime
-				with open(fpath, "rb") as fd:
-					fbytes = fd.read()
-					fd.close()
-				s.sendall(make_line_bytes(["PUT", fpath, len(fbytes), fown, int(fmtime)]))
-				sentbytes = s.send(fbytes)
-				if sentbytes < len(fbytes):
-					print("Error uploading " + fpath)
-				else:
-					print("Successfully uploaded " + fpath)
+				print("Uploading " + fpath)
+				send_file(s, fpath)
+				print("Uploaded " + fpath)
 			elif fcode == "CLIOLD":
 				s.sendall(make_line_bytes(["GET", fpath]))
-				print("Requesting " + fpath)
+				print("Requested " + fpath)
 			else:
 				print("but what is {}?".format(fcode))
 
 		# Client done with requests. Can exit
-		s.sendall(b"")
-		print("Requested/Sent all files successfully. Exiting")
-		break
+		#print("Sent/Received all files successfully Exiting...")
+		#break
 
 	elif code == "TOSAVE":
-		fpath, flength, fown, fmtime = headers
-		fbytes = s.recv(int(flength))
+		fpath, flength, fmtime = headers
+		flength = int(flength)
+		fbytes = s.recv(flength)
+		while len(fbytes) < flength: # sometimes recv doesn't receive all bytes
+			add_bytes = s.recv(flength - len(fbytes))
+			fbytes += add_bytes # additional bytes
+			print("Downloading {} [{}/{} {}%]".format(fpath, len(fbytes), flength, int(100*len(fbytes)/flength)))
+
 		os.makedirs(os.path.split(fpath)[0], exist_ok=True)
 		with open(fpath, "wb") as fd:
 			fd.write(fbytes)
 			fd.close()
 		os.utime(fpath, (int(fmtime), int(fmtime)))
-		os.chown(fpath, int(fown), int(fown))
-		print("Successfully downloaded " + fpath)
+		print("Downloaded " + fpath)
 
 	elif code == "GOAWAY":
 		print("Server refused connection... Already Logged somewhere else")

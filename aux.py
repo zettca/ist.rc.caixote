@@ -23,3 +23,10 @@ def get_files(path):
 			stats = os.lstat(fpath)
 			lst.append([int(stats.st_mtime), fpath])
 	return lst
+
+def send_file(conn, fpath):
+	stats = os.lstat(fpath)
+	with open(fpath, "rb") as fd:
+		fbytes = fd.read()
+	conn.sendall(make_line_bytes(["PUT", fpath, len(fbytes), int(stats.st_mtime)]))
+	conn.sendall(fbytes)

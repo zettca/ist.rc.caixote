@@ -1,5 +1,0 @@
-this is a test file with many bytes of data
-and lorem ipsum stuffs...
-okay, still not enough bytes?
-lets just reach a power 2
-ok

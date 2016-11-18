@@ -19,15 +19,6 @@ def make_line_bytes(lst):
 	lst[-1] += "\n"
 	return bytes(" ".join(lst), ENC)
 
-def get_files(path):
-	lst = []
-	for path, dirs, files in os.walk(path):
-		for fi in files:
-			fpath = os.path.join(path, fi)
-			stats = os.lstat(fpath)
-			lst.append([int(stats.st_mtime), fpath])
-	return lst
-
 def send_file(conn, fpath):
 	stats = os.lstat(fpath)
 	with open(fpath, "rb") as fd:
@@ -35,8 +26,14 @@ def send_file(conn, fpath):
 	conn.sendall(make_line_bytes(["PUT", fpath, len(fbytes), int(stats.st_mtime)]))
 	conn.sendall(fbytes)
 
-def request_file_infos(conn, dir):
-	files = get_files(dir)
-	conn.sendall(make_line_bytes(["INF", len(files)]))
-	for file in files:
+def request_file_diff(conn, dir):
+	flist = []
+	for path, dirs, files in os.walk(dir):
+		for fi in files:
+			fpath = os.path.join(path, fi)
+			stats = os.lstat(fpath)
+			flist.append([int(stats.st_mtime), fpath])
+
+	conn.sendall(make_line_bytes(["DIFF", len(flist)]))
+	for file in flist:
 		conn.sendall(make_line_bytes(file))

@@ -19,4 +19,7 @@ while True:
 	conn, addr = s.accept()
 	log("{}:{} connected".format(*addr))
 	sock = {"addr": addr, "conn": conn}
-	start_new_thread(client_handler, (sock,))
+	try:
+		start_new_thread(client_handler, (sock,))
+	except Exception as e:
+		log("Exception with {}:{} | {}".format(addr[0], addr[1], e))

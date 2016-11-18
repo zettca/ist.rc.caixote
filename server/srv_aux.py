@@ -1,12 +1,23 @@
 import time
 import os
 
-ENC = "utf8"
+ENCODING = "utf8"
 ROOT_PATH = "files"
+SLEEP_TIME = 2 # seconds
 logged_sockets = []
 
 def log(msg):
 	print("[{}] {}".format(time.strftime("%H:%M:%S", time.localtime()), msg))
+
+def recv_bytes(conn, len):
+	res = b""
+	try:
+		res = conn.recv(len)
+	except Exception as e:
+		log("The following error ocurred while reading from socket:")
+		log(e)
+		return None
+	return res
 
 def login_user(sock, uname, upath):
 	for s in logged_sockets:
@@ -23,15 +34,19 @@ def remove_from_socketlist(sock):
 def readline_split(conn):
 	byteses = b""
 	while True:
-		byte = conn.recv(1)
+		byte = recv_bytes(conn, 1)
 		if not byte or byte == b"\n": break
 		byteses += byte
-	return str(byteses, ENC).split(" ")
+	try:
+		return str(byteses, ENCODING).split(" ")
+	except Exception as e:
+		log(e)
+		return []
 
 def make_line_bytes(lst):
 	lst = [str(el) for el in lst]
 	lst[-1] += "\n"
-	return bytes(" ".join(lst), ENC)
+	return bytes(" ".join(lst), ENCODING)
 
 # ============================================================ #
 
@@ -73,9 +88,9 @@ def make_file_diffs(sock, headers):
 
 def save_file(sock, cf_path, flength, fmtime):
 	conn = sock["conn"]
-	fbytes = conn.recv(flength)
+	fbytes = recv_bytes(conn, flength)
 	while len(fbytes) < flength: # sometimes recv doesn't receive all bytes
-		fbytes += conn.recv(flength - len(fbytes))
+		fbytes += recv_bytes(conn, flength - len(fbytes))
 		log("Downloading {} [{}/{} {}%]".format(cf_path, len(fbytes), flength, int(100*len(fbytes)/flength)))
 
 	sf_path = os.path.join(ROOT_PATH, sock["uname"], cf_path)
@@ -90,7 +105,7 @@ def send_file(sock, cf_path):
 	stats = os.lstat(sf_path)
 	with open(sf_path, "rb") as fd:
 		fbytes = fd.read()
-	conn.sendall(make_line_bytes(["TOSAVE", cf_path, len(fbytes), int(stats.st_mtime)]))
+	conn.sendall(make_line_bytes(["FILE", cf_path, len(fbytes), int(stats.st_mtime)]))
 	conn.sendall(fbytes)
 
 # ============================================================ #
@@ -109,54 +124,61 @@ def client_handler(sock):
 		#log(data)
 		method, headers = data[0], data[1:] # Split header line
 
-		if method == "LOG": # CLIENT REQUESTED "LOGIN" 
-			uname, upath = headers
+		if method == "LOGIN": # CLIENT REQUESTED "LOGIN" 
+			uname, upath = headers[0], headers[1]
 			sock["uname"], sock["upath"] = uname, upath
 			if login_user(sock, uname, upath):
 				log("Client {}:{} identified as {}".format(addr[0], addr[1], uname))
-				conn.sendall(b"LOGGED arg2\n")
+				conn.sendall(make_line_bytes(["LOGGED", "IN"]))
 			else:
-				conn.sendall(b"GOAWAY arg2\n")
+				conn.sendall(make_line_bytes(["LOGGED", "OUT"]))
 				break
 
-		elif method == "INF": # CLIENT REQUESTED FILES INFOS
+		elif "uname" not in sock and "upath" not in sock:
+			log("Unauthenticated client issued non-login method")
+			break
+
+		elif method == "DIFF": # CLIENT REQUESTED FILES INFOS
+			log("Client {} requested files DIFF".format(sock["uname"]))
 			response = make_file_diffs(sock, headers)
-			conn.sendall(make_line_bytes(["TOSYNC", len(response)]))
+			conn.sendall(make_line_bytes(["DIFFS", len(response)]))
 			for line in response:
 				log("Requesting file " + line[1])
 				conn.sendall(make_line_bytes(line))
 
 		elif method == "GET": # CLIENT REQUESTED FILE CONTENTS
 			cf_path = headers[0]
-			log("Uploading {}".format(cf_path))
-			time.sleep(0.6)
+			log("Uploading {}...".format(cf_path))
+			time.sleep(SLEEP_TIME)
 			send_file(sock, cf_path)
 			log("Uploaded " + cf_path)
 
-		elif method == "GEN": # CLIENT REQUESTED N FILES' CONTENTS
+		elif method == "GETN": # CLIENT REQUESTED N FILES' CONTENTS
 			num_lines = headers[0]
-			print("in gen" + num_lines)
 			for _ in range(int(num_lines)):
 				cf_path = readline_split(conn)[0]
-				log("Uploading {}".format(cf_path))
-				time.sleep(0.6)
+				log("Uploading {}...".format(cf_path))
+				time.sleep(SLEEP_TIME)
 				send_file(sock, cf_path)
 				log("Uploaded " + cf_path)
 
 		elif method == "PUT": # CLIENT SENT FILES CONTENTS
-			cf_path, flength, fmtime = headers
-			log("Downloading {}".format(cf_path))
-			time.sleep(0.6)
+			cf_path, flength, fmtime = headers[0], headers[1], headers[2]
+			log("Downloading {}...".format(cf_path))
+			time.sleep(SLEEP_TIME)
 			save_file(sock, cf_path, int(flength), fmtime)
 			log("Downloaded " + cf_path)
+
+		elif method == "EXIT":
+			log("Client {} safely closed connection".format(sock["uname"]))
 
 		elif method:
 			log("Unknown method: {}. Ignoring".format(method))
 
 		else:
-			log("Files are synced? Killing {}'s connection...".format(sock["uname"]))
+			log("Killing connection to {}:{}".format(*addr))
 			break
 
 	remove_from_socketlist(sock)
-	log("Closing connection to {}:{}".format(*addr))
 	conn.close()
+	log("Closed connection to {}:{}".format(*addr))

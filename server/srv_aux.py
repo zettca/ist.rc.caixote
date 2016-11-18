@@ -32,16 +32,16 @@ def remove_from_socketlist(sock):
 			logged_sockets.remove(s)
 
 def readline_split(conn):
-	byteses = b""
-	while True:
-		byte = recv_bytes(conn, 1)
-		if not byte or byte == b"\n": break
-		byteses += byte
 	try:
+		byteses = b""
+		while True:
+			byte = recv_bytes(conn, 1)
+			if not byte or byte == b"\n": break
+			byteses += byte
 		return str(byteses, ENCODING).split(" ")
 	except Exception as e:
 		log(e)
-		return []
+		return None
 
 def make_line_bytes(lst):
 	lst = [str(el) for el in lst]
@@ -53,7 +53,8 @@ def make_line_bytes(lst):
 def get_files_cli_relative(path):
 	lst = []
 	for path, dirs, files in os.walk(path):
-		cli_path = "/".join(path.split("/")[2:]) # removes uname/upath/
+		sep = os.sep
+		cli_path = sep.join(path.split(sep)[2:]) # removes uname/upath/
 		for fi in files:
 			lst.append(os.path.join(cli_path, fi))
 	return lst

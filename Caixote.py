@@ -57,8 +57,8 @@ while True:
 		if my_olds:
 			s.sendall(make_line_bytes(["GETN", len(my_olds)]))
 			body = b""
-			for line in my_olds:
-				body += make_line_bytes([line])
+			for fpath in my_olds:
+				body += make_line_bytes([fpath])
 			s.sendall(body)
 		else:
 			all_files_downloaded = True

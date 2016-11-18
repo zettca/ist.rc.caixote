@@ -12,12 +12,12 @@ def readline_split(conn):
 		byte = conn.recv(1)
 		if not byte or byte == b"\n": break
 		byteses += byte
-	return str(byteses, ENC).split(" ")
+	return str(byteses, ENC).split(os.pathsep)
 
 def make_line_bytes(lst):
 	lst = [str(el) for el in lst]
 	lst[-1] += "\n"
-	return bytes(" ".join(lst), ENC)
+	return bytes(os.pathsep.join(lst), ENC)
 
 def send_file(conn, fpath):
 	stats = os.lstat(fpath)

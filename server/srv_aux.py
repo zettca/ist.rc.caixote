@@ -38,7 +38,7 @@ def readline_split(conn):
 			byte = recv_bytes(conn, 1)
 			if not byte or byte == b"\n": break
 			byteses += byte
-		return str(byteses, ENCODING).split(" ")
+		return str(byteses, ENCODING).split(os.pathsep)
 	except Exception as e:
 		log(e)
 		return None
@@ -46,7 +46,7 @@ def readline_split(conn):
 def make_line_bytes(lst):
 	lst = [str(el) for el in lst]
 	lst[-1] += "\n"
-	return bytes(" ".join(lst), ENCODING)
+	return bytes(os.pathsep.join(lst), ENCODING)
 
 # ============================================================ #
 

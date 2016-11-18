@@ -14,17 +14,17 @@ A Python implementation of a Dropbox-like user folder file synchronization.
 * Bash
 * Port/File R/W permissions
 
-## Server
+#### Server
 ```shell
 python3 server/Server.py PORT
 ```
 
-## Caixote (Client)
+#### Caixote (Client)
 ```
 python3 Caixote.py HOST PORT USERNAME FOLDERNAME
 ```
 
-Or connect using `telnet` or `netcat`
+Or connect using `telnet` or `netcat` with `HOST PORT`
 
 
 ### Disclaimer

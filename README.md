@@ -16,7 +16,8 @@ A Python implementation of a Dropbox-like user folder file synchronization.
 
 #### Server
 ```shell
-python3 server/Server.py PORT
+cd server
+python3 Server.py PORT
 ```
 
 #### Caixote (Client)

@@ -17,7 +17,7 @@ s.sendall(make_line_bytes(["LOGIN", USER, DIR])) # Login request
 
 while True:
 	if all_files_uploaded and all_files_downloaded:
-		log("Directory successfully synchronized. Exiting...")
+		log("All files were downloaded and uploaded. Exiting...")
 		break
 
 	data = readline_split(s) # waits for a line to be sent

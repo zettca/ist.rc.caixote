@@ -85,6 +85,12 @@ def make_file_diffs(sock, headers):
 	for fi in set(srv_files) - set(cli_files): # New file to client
 		response.append(["CLIOLD", fi])
 
+	#exercicio da aula pratica
+	for line in reversed(response):
+		fn = os.path.split(line[1])[1]
+		if not fn[0].upper() == "A":
+			response.remove(line)
+
 	return response
 
 def save_file(sock, cf_path, flength, fmtime):
@@ -125,7 +131,7 @@ def client_handler(sock):
 		#log(data)
 		method, headers = data[0], data[1:] # Split header line
 
-		if method == "LOGIN": # CLIENT REQUESTED "LOGIN" 
+		if method == "LOGIN": # CLIENT REQUESTED "LOGIN"
 			uname, upath = headers[0], headers[1]
 			sock["uname"], sock["upath"] = uname, upath
 			if login_user(sock, uname, upath):

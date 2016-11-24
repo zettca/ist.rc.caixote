@@ -44,11 +44,11 @@ while True:
 		for _ in range(num_files): # upload/request all files needed
 			fcode, fpath = readline_split(s)
 			if fcode == "SRVOLD":
-				log("Uploading " + fpath)
+				log("Uploading {}...".format(fpath))
 				send_file(s, fpath)
 				log("Uploaded " + fpath)
 			elif fcode == "CLIOLD":
-				log("Requesting " + fpath)
+				log("Requesting {}...".format(fpath))
 				my_olds.append(fpath)
 			else:
 				log("but what is {}?".format(fcode))

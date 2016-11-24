@@ -9,10 +9,9 @@ A Python implementation of a Dropbox-like user folder file synchronization.
 
 ### Usage
 
-## Requirements
-* Python3
-* Bash
-* Port/File R/W permissions
+#### Requirements
+* Python 3.3+
+* Terminal/Bash
 
 #### Server
 ```shell
